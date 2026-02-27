@@ -1,0 +1,16 @@
+{
+  "name": "skillswap-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "backend:dev": "cd backend && npm run dev",
+    "frontend:dev": "cd frontend && npm run dev",
+    "backend:install": "cd backend && npm install",
+    "frontend:install": "cd frontend && npm install",
+    "install:all": "npm run backend:install && npm run frontend:install",
+    "db:migrate": "cd backend && npx prisma migrate dev",
+    "db:seed": "cd backend && node prisma/seed.js",
+    "db:studio": "cd backend && npx prisma studio"
+  },
+  "description": "SkillSwap - Community time-banking platform"
+}

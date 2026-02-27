@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  name            String
+  email           String   @unique
+  passwordHash    String
+  lat             Float?
+  lng             Float?
+  radiusKm        Int      @default(5)
+  balance         Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  rating          Float    @default(0.0)
+  totalHelps      Int      @default(0)
+  ledgerEntries   Ledger[]
+  skills          Skill[]
+  tradesProvided  Trade[]  @relation("TradeProvider")
+  tradesRequested Trade[]  @relation("TradeRequester")
+  sentMessages    Message[] @relation("MessageSender")
+  receivedMessages Message[] @relation("MessageReceiver")
+  reviewsGiven    Review[] @relation("ReviewGiver")
+  reviewsReceived Review[] @relation("ReviewReceiver")
+
+  @@index([lat, lng])
+  @@index([email])
+  @@index([rating])
+}
+
+model Skill {
+  id                   Int     @id @default(autoincrement())
+  userId               Int
+  name                 String
+  kind                 String
+  isVerified           Boolean @default(false)
+  level                String  @default("beginner")
+  verifiedBy           String?
+  yearsOfExp           Int     @default(0)
+  proofUrl             String? // Link to certificate, portfolio, etc.
+  proofType            String? // certificate, portfolio, testimonial, etc.
+  proofDescription     String? @db.Text // Description of proof
+  verificationStatus   String  @default("unverified") // unverified, pending, verified, rejected
+  verificationNotes    String? @db.Text // Notes from verifier
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([kind])
+  @@index([verificationStatus])
+}
+
+model Trade {
+  id            Int       @id @default(autoincrement())
+  providerId    Int?
+  requesterId   Int
+  skill         String
+  hours         Int       @default(1)
+  status        String    @default("pending")
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+  exchangeSkill String?
+  tradeType     String    @default("credit")
+  ledgerEntries Ledger[]
+  reviews       Review[]
+  provider      User?     @relation("TradeProvider", fields: [providerId], references: [id], onDelete: Cascade)
+  requester     User      @relation("TradeRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([requesterId])
+  @@index([status])
+  @@index([tradeType])
+}
+
+model Ledger {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tradeId   Int?
+  change    Int
+  reason    String
+  createdAt DateTime @default(now())
+  trade     Trade?   @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tradeId])
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  content    String   @db.Text
+  isRead     Boolean  @default(false)
+  tradeId    Int?
+  createdAt  DateTime @default(now())
+  sender     User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  reviewerId Int
+  revieweeId Int
+  tradeId    Int
+  rating     Int
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now())
+  reviewer   User     @relation("ReviewGiver", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee   User     @relation("ReviewReceiver", fields: [revieweeId], references: [id], onDelete: Cascade)
+  trade      Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@unique([tradeId, reviewerId])
+  @@index([reviewerId])
+  @@index([revieweeId])
+  @@index([rating])
+}
